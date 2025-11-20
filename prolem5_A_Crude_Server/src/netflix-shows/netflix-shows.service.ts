@@ -14,7 +14,6 @@ export class NetflixShowsService extends BaseService<
   }
 
   async findAll(query: NetflixQueryDto) {
-    console.log('Received query: fasf', query);
   return this.repo.paginateWithFilters(query);
 }
 }

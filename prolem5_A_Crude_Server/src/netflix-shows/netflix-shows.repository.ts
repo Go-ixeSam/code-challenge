@@ -8,6 +8,22 @@ import { NetflixShow } from './entities/netflix-show.entity';
 
 @Injectable()
 export class NetflixShowsRepository extends BaseRepository<NetflixShow> {
+    protected applyFilters(qb: any, filters: any): void {
+        const { search, type, country, release_year } = filters;
+
+        if (search) {
+            qb.andWhere(`
+        (n.title ILIKE :search
+        OR n.director ILIKE :search
+        OR n.cast_members ILIKE :search
+        OR n.description ILIKE :search)
+      `, { search: `%${search}%` });
+        }
+
+        if (type) qb.andWhere('n.type = :type', { type });
+        if (country) qb.andWhere('n.country = :country', { country });
+        if (release_year) qb.andWhere('n.release_year = :release_year', { release_year });
+    }
     constructor(dataSource: DataSource) {
         super(dataSource.getRepository(NetflixShow));
     }
@@ -16,7 +32,6 @@ export class NetflixShowsRepository extends BaseRepository<NetflixShow> {
         const page = query.page ?? 1;
         const limit = query.limit ?? 10;
         const skip = (page - 1) * limit;
-
         return this.paginate({ page, limit, skip });
     }
 

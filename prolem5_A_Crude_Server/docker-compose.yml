@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   postgres:
@@ -15,7 +15,9 @@ services:
     restart: always
 
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: netflix_app
     environment:
       DB_HOST: postgres
@@ -25,22 +27,15 @@ services:
       DB_NAME: netflix
     ports:
       - "3000:3000"
+
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules  # FIX: không ghi đè node_modules
+
     depends_on:
       - postgres
-    develop:
-      watch:
-        - action: sync
-          path: .
-          target: /app
-          ignore:
-            - node_modules/
-            - dist/
-        - action: rebuild
-          path: package.json
-    volumes:
-      - ./:/usr/src/app
-      - /usr/src/app/node_modules
     restart: unless-stopped
 
 volumes:
   postgres_data:
+    name: netflix_postgres_data

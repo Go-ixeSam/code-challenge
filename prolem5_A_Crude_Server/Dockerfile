@@ -1,12 +1,11 @@
 FROM node:20-alpine
 
-WORKDIR /app
+WORKDIR /usr/src/app
 
 COPY package*.json ./
 RUN npm install
-RUN npm install -g @nestjs/cli
-RUN npm install --save-dev nodemon
 
+# Copy source sau khi install
 COPY . .
 
 EXPOSE 3000

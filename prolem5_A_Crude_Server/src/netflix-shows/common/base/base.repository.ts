@@ -2,7 +2,7 @@ import { DeepPartial } from 'typeorm';
 import { Repository } from 'typeorm/repository/Repository';
 import { PaginationOptions } from '../interfaces/pagination-options.interface';
 
-export class BaseRepository<T extends Record<string, any>> {
+export abstract class BaseRepository<T extends Record<string, any>> {
   constructor(protected readonly repo: Repository<T>) { }
 
   async paginate(options: PaginationOptions) {
@@ -19,33 +19,14 @@ export class BaseRepository<T extends Record<string, any>> {
 
     return {
       data,
-      meta: {
-        page: Number(page) || 1,
-        limit: take,
-        total,
-        totalPages: Math.ceil(total / take),
-      },
+      page: Number(page) || 1,
+      limit: take,
+      total,
+      totalPages: Math.ceil(total / take),
     };
   }
 
-  buildWhereQuery(qb, filters: Record<string, any>) {
-    const { search, type, country, release_year } = filters;
-
-    if (search) {
-      qb.andWhere(`
-        (n.title ILIKE :search
-        OR n.director ILIKE :search
-        OR n.cast_members ILIKE :search
-        OR n.description ILIKE :search)
-      `, { search: `%${search}%` });
-    }
-
-    if (type) qb.andWhere('n.type = :type', { type });
-    if (country) qb.andWhere('n.country = :country', { country });
-    if (release_year) qb.andWhere('n.release_year = :release_year', { release_year });
-
-    return qb;
-  }
+  protected abstract applyFilters(qb: any, filters: any): void;
 
   async paginateWithFilters(filters: any) {
     const page = Number(filters.page ?? 1);
@@ -53,8 +34,7 @@ export class BaseRepository<T extends Record<string, any>> {
     const skip = (page - 1) * limit;
 
     let qb = this.repo.createQueryBuilder('n');
-
-    qb = this.buildWhereQuery(qb, filters);
+    this.applyFilters(qb, filters);
 
     const [data, total] = await qb
       .skip(skip)
@@ -64,12 +44,10 @@ export class BaseRepository<T extends Record<string, any>> {
 
     return {
       data,
-      meta: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
     };
   }
 
