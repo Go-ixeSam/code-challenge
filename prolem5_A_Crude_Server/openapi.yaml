@@ -1,0 +1,198 @@
+openapi: 3.0.0
+info:
+  title: Netflix Shows API
+  version: 1.0.0
+
+paths:
+  /netflix-shows:
+    get:
+      summary: Get all Netflix shows
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+          description: Page number
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+          description: Items per page
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Search keyword
+        - in: query
+          name: type
+          schema:
+            type: string
+          description: Filter by type
+        - in: query
+          name: country
+          schema:
+            type: string
+          description: Filter by country
+        - in: query
+          name: release_year
+          schema:
+            type: integer
+          description: Filter by release year
+
+      responses:
+        '200':
+          description: Paginated list of Netflix shows
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NetflixShow'
+
+    post:
+      summary: Create a new Netflix show
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateNetflixShowDto'
+      responses:
+        '201':
+          description: Created show
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetflixShow'
+
+  /netflix-shows/{id}:
+    get:
+      summary: Get a Netflix show by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Netflix show details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetflixShow'
+
+    patch:
+      summary: Update a Netflix show
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateNetflixShowDto'
+      responses:
+        '200':
+          description: Updated show
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetflixShow'
+
+    delete:
+      summary: Delete a Netflix show
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Deleted successfully
+
+components:
+  schemas:
+    NetflixShow:
+      type: object
+      properties:
+        show_id:
+          type: string
+        type:
+          type: string
+          nullable: true
+        title:
+          type: string
+          nullable: true
+        director:
+          type: string
+          nullable: true
+        cast_members:
+          type: string
+          nullable: true
+        country:
+          type: string
+          nullable: true
+        date_added:
+          type: string
+          format: date
+          nullable: true
+        release_year:
+          type: integer
+          nullable: true
+        rating:
+          type: string
+          nullable: true
+        duration:
+          type: string
+          nullable: true
+        listed_in:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+
+    CreateNetflixShowDto:
+      type: object
+      required:
+        - show_id
+      properties:
+        show_id:
+          type: string
+        type:
+          type: string
+        title:
+          type: string
+        director:
+          type: string
+        cast_members:
+          type: string
+        country:
+          type: string
+        date_added:
+          type: string
+          format: date
+        release_year:
+          type: integer
+        rating:
+          type: string
+        duration:
+          type: string
+        listed_in:
+          type: string
+        description:
+          type: string
+
+    UpdateNetflixShowDto:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/CreateNetflixShowDto'
+      description: All fields optional

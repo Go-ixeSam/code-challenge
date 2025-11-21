@@ -1,0 +1,108 @@
+{
+  "info": {
+    "name": "Netflix Shows API Collection (Env-Based)",
+    "_postman_id": "netflix-collection-v2",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get All Shows",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/netflix-shows",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "netflix-shows"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get Show by ID",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/netflix-shows/{{id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "netflix-shows",
+            "{{id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Create Show",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"show_id\": \"s1\",\n  \"title\": \"Example Title\",\n  \"type\": \"Movie\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/netflix-shows",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "netflix-shows"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Update Show",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Updated Title\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/netflix-shows/{{id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "netflix-shows",
+            "{{id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Delete Show",
+      "request": {
+        "method": "DELETE",
+        "url": {
+          "raw": "{{base_url}}/netflix-shows/{{id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "netflix-shows",
+            "{{id}}"
+          ]
+        }
+      }
+    }
+  ]
+}
