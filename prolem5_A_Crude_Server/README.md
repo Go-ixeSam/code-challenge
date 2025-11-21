@@ -86,6 +86,13 @@ prolem5_A_Crude_Server
 
 # 🚀 **How to Start the Project (IMPORTANT)**
 
+### ⚠️ Before You Start: Create the `.env` File
+
+The project requires a valid `.env` file **before starting Docker**, otherwise the backend container will not be able to establish a database connection.
+
+You can simply copy the existing `.env.example` file content to new `.env` file contente you just create. Or
+you can rename `env.example` to `.env`.  
+
 This project runs **entirely via Docker**.  
 You **do NOT** manually start the NestJS server — Docker handles that automatically.
 
