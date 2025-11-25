@@ -39,8 +39,8 @@ Build a realtime leaderboard system capable of:
 
 ## 4. Execution Flow (Backend-Centric Scoring Logic)
 
-Sequence Diagram:  
-[`sequence_diagram.png`](../prolem6/diagram/sequence_diagram.png)
+Activity Diagram:  
+[`activity_diagram.png`](../prolem6/diagram/activity_diagram.png)
 
 Standard scoring pipeline:
 
