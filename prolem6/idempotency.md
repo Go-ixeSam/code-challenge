@@ -1,33 +1,27 @@
-# Idempotency in the Leaderboard Scoring System
+# Idempotency in the Leaderboard System
 
-This document summarizes the **purpose** and **outcome** of implementing idempotency in the scoring pipeline of the leaderboard system.
+## 1. The Problem
+A user action may be **sent multiple times** due to network retries, refreshes, double-clicks, or client-side resubmissions.  
+If the backend increments the score on every repeated request, the user may receive **duplicate points**, resulting in incorrect totals and ranking.
 
----
+## 2. Why It Matters
+The scoring pipeline must guarantee that **each logical action affects the score exactly once**.  
+Without idempotency:
+- Users can gain extra points unintentionally  
+- Leaderboard ordering becomes inaccurate  
+- Data in PostgreSQL and Redis becomes inflated and unreliable  
 
-## 1. Purpose
+Even with retries or repeated client calls, the backend must maintain the same final result.
 
-Idempotency ensures that processing the same scoring request multiple times results in the **same final state**, preventing:
+## 3. Solution (Based on the Original Design)
+To prevent duplicate score increments:
 
-- Duplicate score increments  
-- Double writes caused by retries or network issues  
-- Inconsistent leaderboard values  
-- Cheating attempts through rapid or repeated submissions  
-- Data corruption from race conditions or client resubmissions  
+- Generate or accept a **unique request identifier** for each scoring action.  
+- Ensure the backend processes each unique action **only once**, ignoring duplicates.  
+- Store processed action identifiers (or sequence counters) so that retries cannot apply the same score multiple times.
 
-Its primary role is to maintain **data consistency** and protect the score integrity of the system.
+With idempotency in place, the system ensures that:
+**retrying a scoring request never alters the final score more than once.**
 
----
-
-## 2. Result
-
-After applying idempotency:
-
-- Score updates occur **exactly once**, regardless of how many times the request is submitted.  
-- Database state remains **consistent and stable** under retries, timeouts, or duplicated calls.  
-- The leaderboard reflects accurate, non-duplicated values.  
-- Spam-based or exploit-based scoring attempts no longer produce unintended score gains.  
-- System reliability increases during high-load or unstable network conditions.  
-- Debugging becomes easier by associating outcomes with a unique request identifier.
-
-Idempotency ensures accuracy, consistency, and fairness throughout the scoring process.
-
+## A diagram for clear vision
+[`idempotency.png`](./diagram/idempotency.png)
