@@ -1,94 +1,112 @@
-# Game Leaderboard Module Specification (NestJS)
+# 🏆 Realtime Leaderboard Module — Clean Architecture (NestJS + PostgreSQL + Redis)
 
-This document fully describes the **Realtime Game Leaderboard** module built with NestJS, PostgreSQL, Redis, and WebSocket.
-The system follows a scoring pipeline: player performs action → backend calculates points → updates DB → updates Redis leaderboard → pushes realtime updates to clients.
+## 1. Problem Statement
 
-Goal: fast – simple – anti-cheat – extensible – realtime.
+Build a realtime leaderboard system capable of:
 
----
+- Receiving actions from users  
+- Calculating points based on actionType stored in the database  
+- Updating scores in PostgreSQL
+- Syncing scores to Redis ZSET for fast rank/top queries  
+- Displaying the top 10 players  
+- Sending realtime updates to clients  
+- Storing score history  
+- Preventing clients from tampering with score values
 
-# 1. Overview
+## 2. Assumptions
 
-This module handles the entire scoring pipeline:
+- Points for each action are defined in the `action_types` table.  
+- Users send **actionType only**, never raw points.  
+- PostgreSQL is the **source of truth** for user scores.  
+- Redis ZSET is used only for leaderboard ranking, not score calculation.  
+- Clients authenticate via JWT.  
+- Realtime delivery (WebSocket ) will be chosen later.  
+- Improvements regarding consistency & idempotency are documented separately:
+  - `consistency.md`
+  - `idempotency.md`
 
-- Backend **calculates score** using the `action_types` table.
-- PostgreSQL stores the **source of truth** player scores.
-- Redis ZSET maintains the **realtime leaderboard**.
-- WebSocket broadcasts updates to connected clients.
-- JWT ensures valid player authentication.
-- Basic anti-cheat: client never sends delta, only sends actionType.
+## 3. Architecture Overview
 
----
+### Technology Stack
+- NestJS  
+- PostgreSQL  
+- Redis ZSET  
+- JWT  
+- WebSocket (or other realtime layer)
 
-# 2. Objectives
+### System Architecture Diagram  
+[`system_architecture.png`](../prolem6/diagram/system_architecture.png)
 
-- Accept valid game actions from the client.  
-- Validate permissions & user identity via JWT.  
-- Lookup point values from `action_types`.  
-- Update the `user_scores` table.  
-- Update Redis ZSET leaderboard.  
-- Emit WebSocket events to all clients.  
-- Keep Auth module and Scoreboard module fully separated.  
-- Allow admin to define new actions (via DB).  
-- Log every action via `score_events`.
+## 4. Execution Flow (Backend-Centric Scoring Logic)
 
----
+Sequence Diagram:  
+[`sequence_diagram.png`](../prolem6/diagram/sequence_diagram.png)
 
-# 3. System Architecture (PlantUML)
-  Open system_architecture.png
----
- 
-# 4. Data Model (ERD in PlantUML)
-  Open erd.png
----
+Standard scoring pipeline:
 
-# 5. Execution Flow — From Game Action → Leaderboard Update (PlantUML)
-  Open sequence_diagram.png
----
+1. Client sends **actionType**  
+2. Backend validates JWT → obtains userId  
+3. Backend looks up points from `action_types`  
+4. Backend updates score in DB (`user_scores`)  
+5. Backend records the event in `score_events`  
+6. Backend syncs the score to Redis using `ZINCRBY`  
+7. Backend retrieves rank using `ZREVRANK`  
+8. Backend pushes realtime update to clients  
 
-# 6. Module Responsibilities
+## 5. Data Model
 
-## 6.1 Scoreboard API
-- Receive `actionType`  
-- Validate action  
-- Lookup point value in DB  
-- Update DB + Redis  
-- Emit WebSocket updates  
-- Return updated score & rank  
+ERD link:  
+[`erd.png`](../prolem6/diagram/erd.png)
 
-## 6.2 Auth Module
-- Validate JWT  
-- Completely separated from scoreboard logic  
-- Does not rely on `user_scores` for authentication  
+### Core Tables
+#### `action_types`
+- action_type  
+- points  
+- description  
 
-## 6.3 WebSocket Gateway
-- Broadcast `scoreboard:update` events  
-- Push updated score & rank to all clients  
+#### `user_scores`
+- user_id  
+- total_score  
 
-## 6.4 Redis Leaderboard
-- `ZINCRBY leaderboard <points> <userId>`  
-- `ZREVRANK` to get rank  
-- `ZRANGE` to fetch top 10  
+#### `score_events`
+- id  
+- user_id  
+- action_type  
+- delta_points  
+- created_at  
 
----
+## 6. Leaderboard Logic (Redis)
 
-# 7. API Specifications
+Redis uses a ZSET named `leaderboard`:
 
-## POST /scores/increment
+- Increase score:  
+  ```
+  ZINCRBY leaderboard <points> <userId>
+  ```
 
-**Headers**
-```
-Authorization: Bearer <jwt>
-```
+- Get rank:  
+  ```
+  ZREVRANK leaderboard <userId>
+  ```
 
-**Body**
+- Get top 10:  
+  ```
+  ZREVRANGE leaderboard 0 9 WITHSCORES
+  ```
+
+## 7. API Endpoints
+
+### POST /scores/increment
+Accepts an actionType and returns updated score & rank.
+
+Request:
 ```json
 {
   "actionType": "kill_monster"
 }
 ```
 
-**Response**
+Response:
 ```json
 {
   "userId": "uuid",
@@ -97,53 +115,16 @@ Authorization: Bearer <jwt>
 }
 ```
 
----
+### GET /scores/top  
+Returns the top 10 users from Redis.
 
-## GET /scores/top  
-Return top 10 players from Redis.
+### GET /scores/:userId  
+Returns current score & rank for the specified user.
 
----
+## 8. Improvements (Links Only)
 
-## GET /scores/:userId  
-Return current rank & score for the user.
+- **Consistency**  
+  → [`consistency.md`](./consistency.md)
 
----
-
-# 8. Action Type Definition
-
-| action_type       | points | description         |
-|------------------|--------|---------------------|
-| kill_monster     | 3      | Kill a normal mob   |
-| kill_boss        | 20     | Defeat a boss       |
-| assist_teammate  | 1      | Assist a teammate   |
-| complete_stage   | 10     | Complete a stage    |
-| login_daily      | 2      | Daily login reward  |
-
----
-
-# 9. Security & Anti-cheat
-
-- JWT authentication  
-- Client **never** sends score delta  
-- Server looks up point values  
-- Rate limiting  
-- Whitelisted action types  
-- Full audit via `score_events`  
-- HTTPS required  
-
----
-
-# 10. Module Logic Breakdown
-
-1. Receive action  
-2. Lookup point value  
-3. Write to DB  
-4. Update Redis leaderboard  
-5. Emit realtime event  
-6. Anti-cheat validation  
-
----
-# Improvements are needed
-To ensure **data correctness** and **safety** within the leaderboard system, every score update must be processed in a way that prevents partial writes, duplication, and inconsistent states. This starts with using a **database transaction**, which guarantees that score updates and event logs are committed atomically—either fully applied or not applied at all. Once the database is successfully updated, **Redis retry** is required to keep the leaderboard cache consistent, even when Redis experiences temporary failures. Finally, **idempotency** ensures that repeated or retried requests never cause duplicate score increments, protecting the system from double writes caused by network instability or client resubmissions. Together, these mechanisms maintain a reliable, accurate, and safe scoring pipeline where data remains consistent across both the database and Redis. 
-
-You can check [consistency.md](./consistency.md) and [idempotency.md](./idempotency.md) to ensure data correctness.
+- **Idempotency**  
+  → [`idempotency.md`](./idempotency.md)
